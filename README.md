@@ -5,8 +5,8 @@
 ## Install and run
 
 ```bash
-git clone --recurse-submodules https://github.com/motion-challenge-project/motion-challenge-textop.git
-cd motion-challenge-textop
+git clone --recurse-submodules https://github.com/MotionChallenge-Project/MotionChallenge-textop.git
+cd MotionChallenge-textop
 uv sync
 uv run evaluate.py
 ```
