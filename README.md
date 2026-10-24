@@ -24,6 +24,9 @@ submodule owns datasets, physics, metrics and verification. See `--help` for opt
 
 Author inference checks: [script](validate_inference.py), [source pins](native-sources.json), [report](validation/native-parity.json).
 
-## Observation track
+## Observations
 
-The restricted observation track is not yet admitted for this checkpoint. [Admission and special handling](admission.json) · [Rules](MotionChallenge-Core/docs/OBSERVATIONS.md).
+Ideal proprioception, without robot world-position or contact feedback. [Checkpoint requirements](admission.json) · [Rules](MotionChallenge-Core/docs/OBSERVATIONS.md).
+
+Evaluation is unavailable until this checkpoint has a verified author-supported
+inference path under these rules. The admission record describes the gap.
