@@ -30,12 +30,30 @@
   "prior_native_parity_sha256": {
     "validation/native-parity.json": "29d098ba1dbedd3361424addc4d970091511e48b7c9e98402aa3ef8b63151f61"
   },
-  "handling": "Current adapter subtracts actual root XYZ from future reference. Author hardware controller supplies a fixed zero position; exact released ONNX and the complete reference/lock-XY preprocessing need validation before switching paths.",
+  "handling": "Current simulation adapter uses actual position feedback. The pinned author hardware code sets odometry position to zero AND unconditionally zeros all 15 future position-error entries, with a separate initial-heading reference transform. This is not equivalent to merely setting our root position to zero. Verify the hardware policy file against this exact latest.onnx SHA and compare the complete C++ observation/reset/action path before admission.",
   "actual_position_integration": "No explicit integration or odometry in the inspected deployed adapter source; blocked paths are listed separately.",
-  "special_handling": "Current adapter subtracts actual root XYZ from future reference. Author hardware controller supplies a fixed zero position; exact released ONNX and the complete reference/lock-XY preprocessing need validation before switching paths.",
+  "special_handling": "Current simulation adapter uses actual position feedback. The pinned author hardware code sets odometry position to zero AND unconditionally zeros all 15 future position-error entries, with a separate initial-heading reference transform. This is not equivalent to merely setting our root position to zero. Verify the hardware policy file against this exact latest.onnx SHA and compare the complete C++ observation/reset/action path before admission.",
   "new_evaluation": {
     "status": "not_started",
     "inherited_scores": false
   },
-  "repository": "https://github.com/MotionChallenge-Project/MotionChallenge-textop"
+  "repository": "https://github.com/MotionChallenge-Project/MotionChallenge-textop",
+  "additional_source_evidence": [
+    {
+      "url": "https://github.com/TeleHuman/TextOp/blob/ef6555fb174c9b5c44945a62c7ffc77b5ddbbf22/TextOpDeploy/src/textop_ctrl/src/onnx_controller.cpp",
+      "sha256": "ba97b73629c8c88c92d202004ace0080a05a73407d6adf159e82df8f948c5e6d"
+    },
+    {
+      "url": "https://github.com/TeleHuman/TextOp/blob/ef6555fb174c9b5c44945a62c7ffc77b5ddbbf22/TextOpDeploy/src/textop_ctrl/src/observation_computer.cpp",
+      "sha256": "a65fad0b4920d2e9357449e1f56b7aab90019c41488a45fa8ee4f8a21d0c9503"
+    },
+    {
+      "url": "https://github.com/TeleHuman/TextOp/blob/ef6555fb174c9b5c44945a62c7ffc77b5ddbbf22/TextOpDeploy/src/textop_ctrl/src/motion_loader.cpp",
+      "sha256": "28ce152a53acd21730f5114cac2878755d8b7251c2249cd024489553776f7f62"
+    },
+    {
+      "url": "https://github.com/TeleHuman/TextOp/blob/ef6555fb174c9b5c44945a62c7ffc77b5ddbbf22/TextOpDeploy/src/textop_ctrl/src/onnx_policy.cpp",
+      "sha256": "faf1bb99848a7e9bd24e08ef5de6dbf91ea206e1b09ec455447f79dc28079d4d"
+    }
+  ]
 }
