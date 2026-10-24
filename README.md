@@ -23,3 +23,7 @@ This repository adapts model inference. The pinned root `MotionChallenge-Core`
 submodule owns datasets, physics, metrics and verification. See `--help` for options.
 
 Author inference checks: [script](validate_inference.py), [source pins](native-sources.json), [report](validation/native-parity.json).
+
+## Observation track
+
+The restricted observation track is not yet admitted for this checkpoint. [Admission and special handling](admission.json) · [Rules](MotionChallenge-Core/docs/OBSERVATIONS.md).
