@@ -69,7 +69,7 @@ def main():
         any(isinstance(t, ast.Name) and t.id == 'target_dof_pos' for t in n.targets) and
         isinstance(n.value, ast.BinOp))
     target_code = compile(ast.Expression(target_node.value), str(deploy), 'eval')
-    world = World(root/'motion-challenge/robots/g1-29dof-cpu-v0.json')
+    world = World(root/'MotionChallenge-Core/robots/g1-29dof-cpu-v0.json')
     assert list(world.joint_names) == scope['mujoco_joint_names']
     rng = np.random.default_rng(241024)
     shuffle = rng.permutation(29)
