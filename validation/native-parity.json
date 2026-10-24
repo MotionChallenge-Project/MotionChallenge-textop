@@ -1,0 +1,33 @@
+{
+  "passed": true,
+  "cases": 160,
+  "resets": 4,
+  "max_abs_error": {
+    "observation": 4.76837158203125e-07,
+    "network_same_input": 0.0,
+    "action": 1.33514404296875e-05,
+    "motor_target": 5.7220458984375e-06,
+    "history": 0.0,
+    "reset_history": 0.0,
+    "stiffness": 0.0,
+    "damping": 0.0,
+    "unclipped_target": 0.0,
+    "unclipped_history": 0.0
+  },
+  "limits": {
+    "observation": 0.0002,
+    "network_same_input": 0.0,
+    "action": 0.0002,
+    "motor_target": 0.0002,
+    "history": 0.0002,
+    "reset_history": 0.0,
+    "stiffness": 0.0,
+    "damping": 0.0,
+    "unclipped_target": 0.0,
+    "unclipped_history": 0.0
+  },
+  "source_commit": "ef6555fb174c9b5c44945a62c7ffc77b5ddbbf22",
+  "checkpoint_sha256": "8df6371cce677a6ef8fd7124d082fbf98df11735b9e1aa5808f1bf9d3152b582",
+  "isaaclab_commit": "21f7136325136ca3f6ca4e0a8125edffe5c24f7e",
+  "scope": "Original MuJoCo deployment observations, Isaac Lab 2.1 math, raw ONNX, PD targets/gains and action history; shuffled SDK joint order, near-vertical poses and clipped reference endpoints. Canonical benchmark initialization and physics replace the author viewer simulation."
+}

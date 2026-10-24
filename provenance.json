@@ -1,0 +1,23 @@
+{
+  "model": "textop",
+  "display_name": "TextOp Tracker 75k",
+  "submitter": "Motion Challenge",
+  "submission_type": "maintainer reproduction, not author submission",
+  "upstream": "https://github.com/TeleHuman/TextOp",
+  "source_commit": "ef6555fb174c9b5c44945a62c7ffc77b5ddbbf22",
+  "checkpoint_sha256": "8df6371cce677a6ef8fd7124d082fbf98df11735b9e1aa5808f1bf9d3152b582",
+  "author_inference_review": "Passed native observation, action history, CPU ONNX and motor-target comparison: 160 cases, 4 resets.",
+  "inference_validation": "validation/native-parity.json",
+  "benchmark_physics": "Shared canonical G1 nominal physics and initialization; not the author training or viewer simulator.",
+  "checkpoint_origin": {
+    "author_release_url": "https://github.com/TeleHuman/TextOp/blob/ef6555fb174c9b5c44945a62c7ffc77b5ddbbf22/USAGE.md",
+    "author_release_label": "TeleHuman/TextOp",
+    "kind": "author_file",
+    "kind_label": "Author-released checkpoint",
+    "artifact_page_url": "https://huggingface.co/datasets/Yochish/TextOp-Data/blob/bb9604ce36ad4c0a77b5cccde89ebbb7c3ca93c9/TextOpTracker/logs/rsl_rl/Pretrained/checkpoints/latest.onnx",
+    "original_filename": "latest.onnx",
+    "download_url": "https://huggingface.co/datasets/Yochish/TextOp-Data/resolve/bb9604ce36ad4c0a77b5cccde89ebbb7c3ca93c9/TextOpTracker/logs/rsl_rl/Pretrained/checkpoints/latest.onnx",
+    "sha256": "8df6371cce677a6ef8fd7124d082fbf98df11735b9e1aa5808f1bf9d3152b582",
+    "verification": "The author usage guide links this artifact repository. Checkpoint identity and inference parity are independently verified."
+  }
+}

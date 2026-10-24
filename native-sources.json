@@ -1,0 +1,14 @@
+{
+  "source_repository": "https://github.com/TeleHuman/TextOp",
+  "source_commit": "ef6555fb174c9b5c44945a62c7ffc77b5ddbbf22",
+  "files": {
+    "TextOpTracker/scripts/deploy_mujoco.py": "5dc2015c076b4fcbda702f17dc4b1f680ee2f17f6490ce417d4331d0a26fe1a9",
+    "USAGE.md": "6a55db0876a94b229f6548e97efddb3500cb2b72c8b96ac6eff8366b904b9395"
+  },
+  "isaaclab": {
+    "version": "v2.1.0",
+    "commit": "21f7136325136ca3f6ca4e0a8125edffe5c24f7e",
+    "url": "https://raw.githubusercontent.com/isaac-sim/IsaacLab/21f7136325136ca3f6ca4e0a8125edffe5c24f7e/source/isaaclab/isaaclab/utils/math.py",
+    "sha256": "df22d3f8918d6773920c3c60e6a8a9d051d99fb203384dda01f8ced26c4eef33"
+  }
+}

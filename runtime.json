@@ -1,0 +1,24 @@
+{
+  "id": "textop-tracker-75k-g1-v1",
+  "entrypoint": "adapter:create",
+  "control_period_s": 0.02,
+  "reference_offsets_s": [
+    0.0,
+    0.02,
+    0.04,
+    0.06,
+    0.08
+  ],
+  "reference_history_s": 0.0,
+  "reference_preview_s": 0.08,
+  "state_access": "privileged-state-v0",
+  "action_mode": "joint-pd-feedforward",
+  "weights": "checkpoints/latest.onnx",
+  "weights_url": "https://huggingface.co/datasets/Yochish/TextOp-Data/resolve/bb9604ce36ad4c0a77b5cccde89ebbb7c3ca93c9/TextOpTracker/logs/rsl_rl/Pretrained/checkpoints/latest.onnx",
+  "weights_sha256": "8df6371cce677a6ef8fd7124d082fbf98df11735b9e1aa5808f1bf9d3152b582",
+  "inference_config": "policy.json",
+  "inference_config_sha256": "c3cc600b74f346c2e56e59ef55e4134a6f1ccdfc761eec5149868b5fa52bce15",
+  "source_repository": "https://github.com/TeleHuman/TextOp",
+  "source_commit": "ef6555fb174c9b5c44945a62c7ffc77b5ddbbf22",
+  "official": false
+}
