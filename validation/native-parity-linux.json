@@ -1,0 +1,31 @@
+{
+  "passed": true,
+  "cases": 160,
+  "resets": 4,
+  "source_commit": "ef6555fb174c9b5c44945a62c7ffc77b5ddbbf22",
+  "checkpoint_sha256": "8df6371cce677a6ef8fd7124d082fbf98df11735b9e1aa5808f1bf9d3152b582",
+  "max_abs_error": {
+    "observation": 3.0517578125e-05,
+    "action": 4.00543212890625e-05,
+    "motor_target": 1.71661376953125e-05,
+    "reset_history": 0.0,
+    "history": 0.0,
+    "position_independence": 0.0
+  },
+  "limits": {
+    "observation": 0.0002,
+    "action": 0.0002,
+    "motor_target": 0.0002,
+    "reset_history": 0.0,
+    "history": 0.0,
+    "position_independence": 0.0
+  },
+  "compiled_source_sha256": {
+    "TextOpDeploy/src/textop_ctrl/src/observation_computer.cpp": "a65fad0b4920d2e9357449e1f56b7aab90019c41488a45fa8ee4f8a21d0c9503",
+    "TextOpDeploy/src/textop_ctrl/include/textop_ctrl/observation_computer.hpp": "5d4f5d44510675e33db4028bb05dd6b647e877ac4ab1aa04dc30bf35ddcefdb4",
+    "TextOpDeploy/src/textop_ctrl/src/textop_onnx_controller.cpp": "ba97b73629c8c88c92d202004ace0080a05a73407d6adf159e82df8f948c5e6d",
+    "TextOpDeploy/src/textop_ctrl/launch/textop_onnx_controller.launch.py": "d55860941621ec20da02dc2c37ec1ede83d3acc50a9833f8dbb2bdfc9c05e8ba",
+    "TextOpDeploy/src/textop_ctrl/config/g1_29dof.yaml": "cd0f7f432650cf89b58c151ece445bfdfd5775814ff2c20a90a131d98007af13"
+  },
+  "scope": "Unmodified author C++ observations with ROS transport stubs, exact hardware policy, initial heading, author-zeroed15 position inputs, start-pose action history, raw action and PD targets. Shuffled joints, signed quaternions, endpoints, repeated reset; position perturbation cannot change input. Benchmark physical initialization stays canonical."
+}

@@ -1,146 +1,147 @@
-"""Compare TextOp against its original deployment and Isaac Lab 2.1 math.
+"""Compare the adapter with compiled, hash-pinned author C++ observations.
 
-uv run --with torch validate_inference.py --source /path/to/pinned/source
-  --weights /path/to/latest.onnx --output /outside/git/parity.json
-The source directory also contains isaaclab-math.py, pinned in native-sources.json.
+Needs a C++17 compiler only for validation. ROS transport is stubbed; the author's
+observation_computer.cpp and header are compiled unchanged.
 """
 import argparse
-import ast
-from dataclasses import replace
-from enum import Enum
+import ctypes
 import hashlib
 import json
 from pathlib import Path
-from types import SimpleNamespace as NS
+import re
+import subprocess
+import tempfile
 
 import numpy as np
-import torch
-from scipy.spatial.transform import Rotation as R
+from scipy.spatial.transform import Rotation
 
 from adapter import TextOp
-from motion_challenge.physics import World, forward_kinematics
-from motion_challenge.sdk import ReferenceFrame
+from motion_challenge.sdk import ProprioceptiveStatePacket, ReferenceFrame
+
+
+def build_native(source, build):
+    files = {
+        'rclcpp/rclcpp.hpp':'#pragma once\nnamespace rclcpp {class Node{};}\n#define RCLCPP_INFO(...) ((void)0)\n',
+        'unitree_hg/msg/low_state.hpp':'''#pragma once
+#include <array>
+namespace unitree_hg::msg {
+struct LowState {struct IMU {std::array<float,4> quaternion; std::array<float,3> gyroscope;} imu_state;
+struct Motor {float q,dq;}; std::array<Motor,29> motor_state;};}
+''',
+        'motion_loader.hpp':'''#pragma once
+#include <array>
+#include <vector>
+struct MotionLoader {int T, future_steps=5, anchor_body_index=0;
+std::vector<std::vector<float>> joint_pos,joint_vel;
+std::vector<std::vector<std::array<float,3>>> body_pos;
+std::vector<std::vector<std::array<float,4>>> body_ori;};
+''',
+        'wrapper.cpp':'''#include <algorithm>
+#include "textop_ctrl/observation_computer.hpp"
+extern "C" {
+void* make(const float* input,int length) {
+ auto m=std::make_shared<MotionLoader>();m->T=length;
+ for(int i=0;i<length;++i) {auto x=input+i*65;
+  m->joint_pos.emplace_back(x,x+29);m->joint_vel.emplace_back(x+29,x+58);
+  m->body_pos.push_back({{x[58],x[59],x[60]}});
+  m->body_ori.push_back({{x[61],x[62],x[63],x[64]}});}
+ return new ObservationComputer(m,nullptr);}
+void step(void* handle,const float* s,const float* last,int t,float* out) {
+ unitree_hg::msg::LowState state;
+ for(int j=0;j<29;++j) {state.motor_state[j].q=s[j];state.motor_state[j].dq=s[29+j];}
+ std::copy(s+58,s+62,state.imu_state.quaternion.begin());
+ std::copy(s+62,s+65,state.imu_state.gyroscope.begin());
+ auto c=static_cast<ObservationComputer*>(handle);
+ c->set_odometry({s[68],s[69],s[70]},{s[65],s[66],s[67]});
+ auto result=c->compute_observation(state,t,std::vector<float>(last,last+29));
+ std::copy(result.begin(),result.end(),out);}
+void destroy(void* handle) {delete static_cast<ObservationComputer*>(handle);}
+}
+'''}
+    for name,content in files.items():
+        p=build/name;p.parent.mkdir(parents=True,exist_ok=True);p.write_text(content)
+    native=source/'TextOpDeploy/src/textop_ctrl'
+    library=build/'observations.so'
+    subprocess.run(['c++','-std=c++17','-O2','-shared','-fPIC','-ffp-contract=off',
+        '-include','iostream','-I'+str(build),'-I'+str(native/'include'),
+        str(native/'src/observation_computer.cpp'),str(build/'wrapper.cpp'),'-o',str(library)],check=True)
+    lib=ctypes.CDLL(str(library));array=np.ctypeslib.ndpointer(dtype=np.float32,flags='C_CONTIGUOUS')
+    lib.make.argtypes=[array,ctypes.c_int];lib.make.restype=ctypes.c_void_p
+    lib.step.argtypes=[ctypes.c_void_p,array,array,ctypes.c_int,array]
+    lib.destroy.argtypes=[ctypes.c_void_p]
+    return lib
 
 
 def main():
-    parser = argparse.ArgumentParser()
-    for name in ('source', 'weights', 'output'):
-        parser.add_argument('--'+name, type=Path, required=True)
-    args = parser.parse_args()
-    root = Path(__file__).resolve().parent
-    pins = json.loads((root/'native-sources.json').read_text())
-    sha = lambda p: hashlib.sha256(p.read_bytes()).hexdigest()
-    for path, digest in pins['files'].items():
-        assert sha(args.source/path) == digest, path
-    math = args.source/'isaaclab-math.py'
-    assert sha(math) == pins['isaaclab']['sha256']
-    scope = {'np': np, 'torch': torch, 'Enum': Enum}
-    functions = {'normalize', 'quat_conjugate', 'quat_inv', 'quat_mul',
-                 'quat_apply', 'subtract_frame_transforms', 'matrix_from_quat'}
-    nodes = [n for n in ast.parse(math.read_text()).body if isinstance(n, ast.FunctionDef) and n.name in functions]
-    assert {n.name for n in nodes} == functions
-    for n in nodes:
-        n.decorator_list = []
-    exec(compile(ast.Module(ast.parse('from __future__ import annotations').body+nodes, []), str(math), 'exec'), scope)
-    deploy = args.source/'TextOpTracker/scripts/deploy_mujoco.py'
-    tree = ast.parse(deploy.read_text())
-    observation_functions = {'quat_rotate_inverse_np', 'get_command', 'motion_anchor_pos_b_future',
-        'motion_anchor_ori_b_future', 'get_base_lin_vel', 'get_base_ang_vel', 'get_joint_pos_rel',
-        'get_joint_vel_rel', 'get_last_action', 'get_projected_gravity', 'compute_observation'}
-    nodes = []
-    for n in tree.body:
-        if isinstance(n, ast.FunctionDef) and n.name == '__fix__add_marker_to_scene':
-            break
-        if isinstance(n, (ast.Assign, ast.FunctionDef, ast.ClassDef)):
-            nodes.append(n)
-    nodes += [n for n in tree.body if isinstance(n, ast.FunctionDef) and n.name in observation_functions]
-    exec(compile(ast.Module(nodes, []), str(deploy), 'exec'), scope)
-    runtime = json.loads((root/'runtime.json').read_text())
-    runtime['weights'] = str(args.weights.resolve())
-    policy = TextOp(root, runtime)
-    assert policy.names == scope['isaaclab_joint_names']
-    assert runtime['reference_offsets_s'] == [0., .02, .04, .06, .08]
-    assert runtime['control_period_s'] == .02
-    assert policy.cfg['action_clip'] is None
-    for key, native in [('default', 'default_angles'), ('scale', 'action_scale'), ('kp', 'kps'), ('kd', 'kds')]:
-        np.testing.assert_array_equal(getattr(policy, key), scope[native][scope['mujoco_to_isaaclab_reindex']])
-    assert scope['anchor_body'] == scope['AnchorBody'].PELVIS
-    target_node = next(n for n in ast.walk(tree) if isinstance(n, ast.Assign) and
-        any(isinstance(t, ast.Name) and t.id == 'target_dof_pos' for t in n.targets) and
-        isinstance(n.value, ast.BinOp))
-    target_code = compile(ast.Expression(target_node.value), str(deploy), 'eval')
-    world = World(root/'MotionChallenge-Core/robots/g1-29dof-cpu-v0.json')
-    assert list(world.joint_names) == scope['mujoco_joint_names']
-    rng = np.random.default_rng(241024)
-    shuffle = rng.permutation(29)
-    names = tuple(np.asarray(world.joint_names)[shuffle])
-    canonical = [names.index(n) for n in world.joint_names]
-    errors = {k: 0. for k in ('observation', 'network_same_input', 'action', 'motor_target',
-        'history', 'reset_history', 'stiffness', 'damping', 'unclipped_target', 'unclipped_history')}
-    def compare(k, a, b):
-        errors[k] = max(errors[k], float(np.max(np.abs(np.asarray(a)-np.asarray(b)))))
-    for reset in range(4):
-        frames = []
-        for step in range(40):
-            rotation = R.from_euler('xyz', [.1, np.pi/2-1e-6, -.5]) if step % 10 == 0 else R.random(random_state=rng)
-            world.data.qpos[:] = np.r_[rng.normal(0, .4, 2), .8, rotation.as_quat()[[3, 0, 1, 2]], rng.normal(0, .3, 29)]
-            world.data.qvel[:] = rng.normal(0, .5, 35)
-            forward_kinematics(world.model, world.data)
-            s = world.state()
-            frames.append(ReferenceFrame(step*.02, step*.02, s.joint_position_rad, s.root_position_world_m,
-                s.root_orientation_xyzw, s.joint_velocity_rad_s, s.root_linear_velocity_world_m_s,
-                s.root_angular_velocity_world_rad_s, s.bodies))
-        reorder = scope['mujoco_to_isaaclab_reindex']
-        loader = NS(T=40, future_steps=5, anchor_body_name='pelvis', anchor_body_index=0,
-            joint_pos=np.asarray([f.joint_position_rad for f in frames])[:, reorder],
-            joint_vel=np.asarray([f.joint_velocity_rad_s for f in frames])[:, reorder],
-            body_pos=np.asarray([f.root_position_world_m for f in frames])[:, None],
-            body_ori=np.asarray([f.root_orientation_xyzw for f in frames])[:, None, [3, 0, 1, 2]])
-        for step in range(40):
-            world.data.qpos[:] = world._qpos(frames[step])
-            world.data.qpos[7:] += rng.normal(0, .2, 29)
-            world.data.qvel[:] = rng.normal(0, .7, 35)
-            forward_kinematics(world.model, world.data)
-            s = world.state()
-            s = replace(s, joint_names=names, joint_position_rad=tuple(np.asarray(s.joint_position_rad)[shuffle]),
-                        joint_velocity_rad_s=tuple(np.asarray(s.joint_velocity_rad_s)[shuffle]))
-            refs = tuple(replace(frames[min(step+i, 39)],
-                joint_position_rad=tuple(np.asarray(frames[min(step+i, 39)].joint_position_rad)[shuffle]),
-                joint_velocity_rad_s=tuple(np.asarray(frames[min(step+i, 39)].joint_velocity_rad_s)[shuffle])) for i in range(5))
-            if step == 0:
-                policy.reset(s, refs, reset)
-                compare('reset_history', policy.last, 0.)
-            obs = scope['compute_observation'](world.data, loader, step, policy.last.copy())[None]
-            actual_obs = policy.observations(s, refs)['obs']
-            compare('observation', actual_obs, obs)
-            expected = policy.session.run(None, {'obs': obs})[0].reshape(29)
-            compare('network_same_input', policy.infer({'obs': obs})['actions'].reshape(29), expected)
-            target = eval(target_code, dict(scope, action=expected))
-            result = policy.act(s, refs)
-            compare('action', policy.last, expected)
-            compare('motor_target', np.asarray(result.joint_position_target_rad)[canonical], target)
-            compare('history', policy.last, policy.infer({'obs': actual_obs})['actions'].reshape(29))
-            compare('stiffness', np.asarray(result.kp_nm_rad)[canonical], scope['kps'])
-            compare('damping', np.asarray(result.kd_nm_s_rad)[canonical], scope['kds'])
-        raw = np.linspace(-25, 25, 29, dtype=np.float32)
-        infer = policy.infer
-        policy.infer = lambda _: {'actions': raw[None]}
-        result = policy.act(s, refs)
-        policy.infer = infer
-        compare('unclipped_target', np.asarray(result.joint_position_target_rad)[canonical], eval(target_code, dict(scope, action=raw)))
-        compare('unclipped_history', policy.last, raw)
-    limits = {k: 2e-4 for k in errors}
-    for k in ('network_same_input', 'reset_history', 'stiffness', 'damping', 'unclipped_target', 'unclipped_history'):
-        limits[k] = 0.
-    report = {'passed': all(errors[k] <= limits[k] for k in errors), 'cases': 160, 'resets': 4,
-        'max_abs_error': errors, 'limits': limits, 'source_commit': pins['source_commit'],
-        'checkpoint_sha256': runtime['weights_sha256'], 'isaaclab_commit': pins['isaaclab']['commit'],
-        'scope': 'Original MuJoCo deployment observations, Isaac Lab 2.1 math, raw ONNX, PD targets/gains and action history; shuffled SDK joint order, near-vertical poses and clipped reference endpoints. Canonical benchmark initialization and physics replace the author viewer simulation.'}
-    args.output.parent.mkdir(parents=True, exist_ok=True)
-    args.output.write_text(json.dumps(report, indent=2)+'\n')
-    print(json.dumps(report, indent=2))
-    assert report['passed']
+    parser=argparse.ArgumentParser()
+    for key in ('source','weights','output'):parser.add_argument('--'+key,type=Path,required=True)
+    args=parser.parse_args();root=Path(__file__).resolve().parent
+    sha=lambda p:hashlib.sha256(p.read_bytes()).hexdigest()
+    pins=json.loads((root/'native-sources.json').read_text())
+    for name,digest in pins['files'].items():assert sha(args.source/name)==digest,name
+    runtime=json.loads((root/'runtime.json').read_text());runtime['weights']=str(args.weights.resolve())
+    assert sha(args.weights)==runtime['weights_sha256']
+    policy=TextOp(root,runtime)
+    native=args.source/'TextOpDeploy/src/textop_ctrl'
+    yaml=(native/'config/g1_29dof.yaml').read_text()
+    extract=lambda name:json.loads(re.search(r'^'+name+r':\s*(\[[\s\S]*?\])',yaml,re.M).group(1))
+    names=extract('joint_names');order=[names.index(n) for n in policy.names]
+    for field,key in [('default','default_angles'),('scale','action_scale'),('kp','kps'),('kd','kds')]:
+        np.testing.assert_array_equal(getattr(policy,field),np.asarray(extract(key),np.float32)[order])
+    cpp=(native/'src/textop_onnx_controller.cpp').read_text()
+    start=re.search(r'std::vector<float> start_pose = \{(.*?)\};',cpp,re.S).group(1)
+    start=np.array([float(x.strip().removesuffix('f')) for x in start.split(',') if x.strip()],np.float32)[order]
+    rng=np.random.default_rng(241025);shuffled=tuple(np.asarray(names)[rng.permutation(29)])
+    canonical=[shuffled.index(n) for n in names]
+    errors={k:0. for k in ('observation','action','motor_target','reset_history','history','position_independence')}
+    def compare(key,a,b):errors[key]=max(errors[key],float(np.max(np.abs(np.asarray(a)-np.asarray(b)))))
+    with tempfile.TemporaryDirectory() as directory:
+        lib=build_native(args.source,Path(directory))
+        for reset in range(4):
+            frames=[]
+            for t in range(40):
+                rotation=Rotation.random(random_state=rng).as_quat()
+                if t%9==0:rotation=-rotation
+                frames.append(ReferenceFrame(t*.02,t*.02,tuple(rng.normal(0,.3,29)),
+                    tuple(rng.normal(0,1,3)),tuple(rotation),tuple(rng.normal(0,.5,29))))
+            policyorder=[shuffled.index(n) for n in policy.names]
+            data=np.ascontiguousarray([(*np.asarray(f.joint_position_rad)[policyorder],
+                *np.asarray(f.joint_velocity_rad_s)[policyorder],*f.root_position_world_m,
+                *np.asarray(f.root_orientation_xyzw)[[3,0,1,2]]) for f in frames],dtype=np.float32)
+            handle=lib.make(data,40)
+            try:
+                last=(start-policy.default)/policy.scale
+                for t in range(40):
+                    rotation=Rotation.random(random_state=rng)
+                    q=rotation.as_quat()
+                    if t%7==0:q=-q
+                    state=ProprioceptiveStatePacket(t*.02,shuffled,tuple(rng.normal(0,.3,29)),
+                        tuple(rng.normal(0,.7,29)),tuple(q),tuple(rng.normal(0,.5,3)),tuple(rng.normal(0,.5,3)))
+                    refs=tuple(frames[min(t+i,39)] for i in range(5))
+                    if t==0:
+                        policy.reset(state,refs,reset);compare('reset_history',policy.last,last)
+                    s=np.array([*np.asarray(state.joint_position_rad)[canonical],
+                        *np.asarray(state.joint_velocity_rad_s)[canonical],*q[[3,0,1,2]],
+                        *rotation.inv().apply(state.root_angular_velocity_world_rad_s),
+                        *state.root_linear_velocity_world_m_s,0,0,0],np.float32)
+                    obs=np.empty(431,np.float32);lib.step(handle,s,last,t,obs)
+                    other=np.empty(431,np.float32);s[68:]=rng.normal(0,100,3);lib.step(handle,s,last,t,other)
+                    compare('position_independence',obs,other)
+                    actual=policy.observations(state,refs)['obs'][0];compare('observation',actual,obs)
+                    expected=policy.infer({'obs':obs[None]})['actions'].reshape(29)
+                    result=policy.act(state,refs);compare('action',policy.last,expected)
+                    compare('motor_target',np.asarray(result.joint_position_target_rad)[policy.order],policy.default+policy.scale*expected)
+                    compare('history',policy.last,policy.infer({'obs':actual[None]})['actions'].reshape(29))
+                    last=expected.copy()
+            finally:lib.destroy(handle)
+    limits={k:2e-4 for k in errors}
+    for key in ('reset_history','history','position_independence'):limits[key]=0.
+    report=dict(passed=all(errors[k]<=limits[k] for k in errors),cases=160,resets=4,
+        source_commit=pins['source_commit'],checkpoint_sha256=runtime['weights_sha256'],
+        max_abs_error=errors,limits=limits,compiled_source_sha256=pins['files'],
+        scope='Unmodified author C++ observations with ROS transport stubs, exact hardware policy, initial heading, author-zeroed15 position inputs, start-pose action history, raw action and PD targets. Shuffled joints, signed quaternions, endpoints, repeated reset; position perturbation cannot change input. Benchmark physical initialization stays canonical.')
+    args.output.parent.mkdir(parents=True,exist_ok=True);args.output.write_text(json.dumps(report,indent=2)+'\n')
+    print(json.dumps(report,indent=2));assert report['passed']
 
 
-if __name__ == '__main__':
-    main()
+if __name__=='__main__':main()

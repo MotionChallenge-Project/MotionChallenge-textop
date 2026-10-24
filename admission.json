@@ -3,7 +3,7 @@
   "model": "textop",
   "display_name": "TextOp Tracker 75k",
   "state_access": "ideal-proprioceptive-no-position-v1",
-  "status": "requires_author_deployment_validation",
+  "status": "inference_verified",
   "checkpoint_sha256": "8df6371cce677a6ef8fd7124d082fbf98df11735b9e1aa5808f1bf9d3152b582",
   "auxiliary_artifacts": {},
   "checkpoint_origin": {
@@ -21,39 +21,47 @@
   "author_commit": "ef6555fb174c9b5c44945a62c7ffc77b5ddbbf22",
   "base_adapter_commit": "e4cfc721e1f46ef3c809ee32f189dd8e833b9602",
   "production_source_sha256": {
-    "adapter.py": "e5d99fa2b92aba4a2815fa0fed33c199af332616584fc88eeb6db97f9a42cb4c",
+    "adapter.py": "a22e2a5a9b4c4b8bd50c7dc673559ce837560860cfa5df72b5951e9067ddc777",
     "evaluate.py": "0ebb8c761f00dd963f2e45c85ecb94628273911bb1edfc0f2621e8fc458cb4ff",
-    "native-sources.json": "551bf9c503c417e7953fb62b5ed276d72de45b94befe71575f8096ea7a6a3b1d",
-    "policy.json": "c3cc600b74f346c2e56e59ef55e4134a6f1ccdfc761eec5149868b5fa52bce15",
-    "validate_inference.py": "43cfb2ae451f2fab419c6f93f91c2a1395c2cc91fab6a73135304e30d53e5d47"
+    "native-sources.json": "75d0dacb672e7fcfe79f47a39ef0c05fa1b2304c769ce19eea61f1470520a480",
+    "policy.json": "0c101d2453fbee0d390d3c54601c3c35231108e96b7c397d7c7419c1b885bc2c",
+    "validate_inference.py": "3e961ad5be58486aef675331f1c144071b8fe0234290e5771196777d7144701c"
   },
   "prior_native_parity_sha256": {
-    "validation/native-parity.json": "29d098ba1dbedd3361424addc4d970091511e48b7c9e98402aa3ef8b63151f61"
+    "validation/native-parity.json": "3ea867f3544822214b8be9ef5a1d8e9088ff29f60bb58ccd30a29307c29b7fb4",
+    "validation/native-parity-linux.json": "50aa4fb3994366286211006460066377b5b06bb6a1c6cca82310c8d1b41d4ca2"
   },
-  "handling": "Current simulation adapter uses actual position feedback. The pinned author hardware code sets odometry position to zero AND unconditionally zeros all 15 future position-error entries, with a separate initial-heading reference transform. This is not equivalent to merely setting our root position to zero. Verify the hardware policy file against this exact latest.onnx SHA and compare the complete C++ observation/reset/action path before admission.",
-  "actual_position_integration": "No explicit integration or odometry in the inspected deployed adapter source; blocked paths are listed separately.",
-  "special_handling": "Current simulation adapter uses actual position feedback. The pinned author hardware code sets odometry position to zero AND unconditionally zeros all 15 future position-error entries, with a separate initial-heading reference transform. This is not equivalent to merely setting our root position to zero. Verify the hardware policy file against this exact latest.onnx SHA and compare the complete C++ observation/reset/action path before admission.",
-  "new_evaluation": {
-    "status": "not_started",
-    "inherited_scores": false
-  },
+  "handling": "Author C++ hardware route: initial-heading reference alignment, all15 future position inputs zeroed by the author, and last action initialized from the author start pose. The exact hardware weight matches latest.onnx. Canonical benchmark physical reset is unchanged; no robot position is read.",
+  "actual_position_integration": "No measured robot translation, contact inputs or explicit position integration.",
+  "special_handling": "Author C++ hardware route: initial-heading reference alignment, all15 future position inputs zeroed by the author, and last action initialized from the author start pose. The exact hardware weight matches latest.onnx. Canonical benchmark physical reset is unchanged; no robot position is read.",
   "repository": "https://github.com/MotionChallenge-Project/MotionChallenge-textop",
   "additional_source_evidence": [
-    {
-      "url": "https://github.com/TeleHuman/TextOp/blob/ef6555fb174c9b5c44945a62c7ffc77b5ddbbf22/TextOpDeploy/src/textop_ctrl/src/onnx_controller.cpp",
-      "sha256": "ba97b73629c8c88c92d202004ace0080a05a73407d6adf159e82df8f948c5e6d"
-    },
     {
       "url": "https://github.com/TeleHuman/TextOp/blob/ef6555fb174c9b5c44945a62c7ffc77b5ddbbf22/TextOpDeploy/src/textop_ctrl/src/observation_computer.cpp",
       "sha256": "a65fad0b4920d2e9357449e1f56b7aab90019c41488a45fa8ee4f8a21d0c9503"
     },
     {
-      "url": "https://github.com/TeleHuman/TextOp/blob/ef6555fb174c9b5c44945a62c7ffc77b5ddbbf22/TextOpDeploy/src/textop_ctrl/src/motion_loader.cpp",
-      "sha256": "28ce152a53acd21730f5114cac2878755d8b7251c2249cd024489553776f7f62"
+      "url": "https://github.com/TeleHuman/TextOp/blob/ef6555fb174c9b5c44945a62c7ffc77b5ddbbf22/TextOpDeploy/src/textop_ctrl/include/textop_ctrl/observation_computer.hpp",
+      "sha256": "5d4f5d44510675e33db4028bb05dd6b647e877ac4ab1aa04dc30bf35ddcefdb4"
     },
     {
-      "url": "https://github.com/TeleHuman/TextOp/blob/ef6555fb174c9b5c44945a62c7ffc77b5ddbbf22/TextOpDeploy/src/textop_ctrl/src/onnx_policy.cpp",
-      "sha256": "faf1bb99848a7e9bd24e08ef5de6dbf91ea206e1b09ec455447f79dc28079d4d"
+      "url": "https://github.com/TeleHuman/TextOp/blob/ef6555fb174c9b5c44945a62c7ffc77b5ddbbf22/TextOpDeploy/src/textop_ctrl/src/textop_onnx_controller.cpp",
+      "sha256": "ba97b73629c8c88c92d202004ace0080a05a73407d6adf159e82df8f948c5e6d"
+    },
+    {
+      "url": "https://github.com/TeleHuman/TextOp/blob/ef6555fb174c9b5c44945a62c7ffc77b5ddbbf22/TextOpDeploy/src/textop_ctrl/launch/textop_onnx_controller.launch.py",
+      "sha256": "d55860941621ec20da02dc2c37ec1ede83d3acc50a9833f8dbb2bdfc9c05e8ba"
+    },
+    {
+      "url": "https://github.com/TeleHuman/TextOp/blob/ef6555fb174c9b5c44945a62c7ffc77b5ddbbf22/TextOpDeploy/src/textop_ctrl/config/g1_29dof.yaml",
+      "sha256": "cd0f7f432650cf89b58c151ece445bfdfd5775814ff2c20a90a131d98007af13"
     }
-  ]
+  ],
+  "dependency_test": {
+    "path": "validation/observation-access.json",
+    "sha256": "8c186c199c3d19833de1923873a962e07697fa7643ec55334b017cb5e0baf48d",
+    "code": "validate_inference.py",
+    "cases": 160,
+    "resets": 4
+  }
 }

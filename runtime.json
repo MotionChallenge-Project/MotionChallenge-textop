@@ -17,12 +17,12 @@
   "weights_url": "https://huggingface.co/datasets/Yochish/TextOp-Data/resolve/bb9604ce36ad4c0a77b5cccde89ebbb7c3ca93c9/TextOpTracker/logs/rsl_rl/Pretrained/checkpoints/latest.onnx",
   "weights_sha256": "8df6371cce677a6ef8fd7124d082fbf98df11735b9e1aa5808f1bf9d3152b582",
   "inference_config": "policy.json",
-  "inference_config_sha256": "c3cc600b74f346c2e56e59ef55e4134a6f1ccdfc761eec5149868b5fa52bce15",
+  "inference_config_sha256": "0c101d2453fbee0d390d3c54601c3c35231108e96b7c397d7c7419c1b885bc2c",
   "source_repository": "https://github.com/TeleHuman/TextOp",
   "source_commit": "ef6555fb174c9b5c44945a62c7ffc77b5ddbbf22",
   "official": false,
   "observation_contract": {
     "admission_record": "admission.json",
-    "admission_sha256": "239a8364b5109f3174151ca4e0289c35994a786c43d461313fc169cda94385e9"
+    "admission_sha256": "3eb8ca2ae7bae9561ab2357b6335e667567882222eea1cdac299c976cee653aa"
   }
 }

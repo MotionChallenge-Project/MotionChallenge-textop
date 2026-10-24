@@ -1,0 +1,23 @@
+{
+  "model": "textop",
+  "status": "passed",
+  "method": "author_deployment_parity",
+  "cases": 160,
+  "resets": 4,
+  "checkpoint_sha256": "8df6371cce677a6ef8fd7124d082fbf98df11735b9e1aa5808f1bf9d3152b582",
+  "validation_script": "validate_inference.py",
+  "tolerance_abs": 0.0002,
+  "max_abs_error": {
+    "observation": 3.0517578125e-05,
+    "action": 4.00543212890625e-05,
+    "motor_target": 1.71661376953125e-05,
+    "reset_history": 0.0,
+    "history": 0.0,
+    "position_independence": 0.0
+  },
+  "handling": "Author C++ hardware route: initial-heading reference alignment, all15 future position inputs zeroed by the author, and last action initialized from the author start pose. The exact hardware weight matches latest.onnx. Canonical benchmark physical reset is unchanged; no robot position is read.",
+  "reports": {
+    "native-parity.json": "3ea867f3544822214b8be9ef5a1d8e9088ff29f60bb58ccd30a29307c29b7fb4",
+    "native-parity-linux.json": "50aa4fb3994366286211006460066377b5b06bb6a1c6cca82310c8d1b41d4ca2"
+  }
+}
