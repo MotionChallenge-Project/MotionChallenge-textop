@@ -1,7 +1,7 @@
 {
   "model": "textop",
   "display_name": "TextOp Tracker 75k",
-  "submitter": "Motion Challenge",
+  "submitter": "MotionChallenge",
   "submission_type": "maintainer reproduction, not author submission",
   "upstream": "https://github.com/TeleHuman/TextOp",
   "source_commit": "ef6555fb174c9b5c44945a62c7ffc77b5ddbbf22",
