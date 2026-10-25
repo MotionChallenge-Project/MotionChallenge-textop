@@ -29,3 +29,7 @@ Author inference checks: [script](validate_inference.py), [source pins](native-s
 Ideal proprioception, without robot world-position or contact feedback. [Checkpoint requirements](admission.json) · [Rules](https://github.com/MotionChallenge-Project/MotionChallenge-Core/blob/da0aec4023bbc3d29be67e1fce9fa9ab8a48c4b5/docs/OBSERVATIONS.md).
 
 Author C++ hardware route: initial-heading reference alignment, all15 future position inputs zeroed by the author, and last action initialized from the author start pose. The exact hardware weight matches latest.onnx. Canonical benchmark physical reset is unchanged; no robot position is read.
+
+## License
+
+Original adapter code: [Apache-2.0](LICENSE). [Upstream notices and licenses](THIRD_PARTY_NOTICES.md). Checkpoint terms remain separate.

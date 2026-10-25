@@ -1,5 +1,9 @@
 # Third-party notices
 
+Original MotionChallenge adapter code is licensed under [Apache-2.0](LICENSE).
+The upstream material identified below retains its own license. Checkpoint and
+dataset terms are separate; the adapter license does not change them.
+
 This adapter follows [TextOp](https://github.com/TeleHuman/TextOp) at
 `ef6555fb174c9b5c44945a62c7ffc77b5ddbbf22`. Its observation layout, joint order,
 control constants and inference behavior come from the author's deployment code.
